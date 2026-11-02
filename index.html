@@ -21,6 +21,36 @@ window.addEventListener("keydown", function(e) {
 }, false);
 </script>
 
+<script>
+(function(){
+  const originalOpen = window.open;
+  window.open = function(url, target, features) {
+    try {
+      const destination = new URL(url || "", window.location.href);
+      if (destination.origin !== window.location.origin) {
+        console.warn("Blocked external popup:", destination.href);
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+    return originalOpen.call(window, url, target, features);
+  };
+  document.addEventListener("click", function(event) {
+    const link = event.target && event.target.closest ? event.target.closest("a[target='_blank']") : null;
+    if (!link) return;
+    try {
+      if (new URL(link.href, window.location.href).origin !== window.location.origin) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    } catch (e) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+})();
+</script>
 </head>
 <body style="overflow:hidden;">
 <div id="fb-root"></div>
