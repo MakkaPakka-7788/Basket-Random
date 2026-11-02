@@ -134,27 +134,13 @@ YYGGames= function () {
     
   this.showInterstitial= function(func) {
     consoleLog("--fx--showInterstitial--", arguments);
-    loadJS("https://www.ubg235.com/ads/commercial.js", (success)=> {
-      if (success) {
-        console.log("--fx--showInterstitial--Done--");        
-      } else {
-        console.log("--fx--showInterstitial--Rejected--");
-      }
-      func();
-    });
+    if (typeof func === "function") func();
     return true;
   }
 
-  this.showReward= function(func) {    
+  this.showReward= function(func) {
     consoleLog("--fx--showReward--", arguments);
-    loadJS("https://www.ubg235.com/ads/rewarded.js", (success)=> {
-      if (success) {
-        console.log("--fx--showReward--Done--");
-        func();
-      } else {
-        console.log("--fx--showReward--Rejected--");
-      }
-    });    
+    if (typeof func === "function") func();
   }
 
   this.onAfterShowAd= function(func) {
