@@ -118,18 +118,51 @@ runOnStartup(runtime => {
       lastP2Score = Number(runtime.globalVars.p2Score) || 0;
 
       const width = runtime.layout?.width || 0;
+      const height = runtime.layout?.height || 0;
+
+      // Invisible Frenzy arena: keep both players and the ball inside the playfield.
+      for (const name of ["body", "body2"]) {
+        for (const player of runtime.objects[name]?.getAllInstances() || []) {
+          const physics = player.behaviors?.Physics;
+          if (!physics || !width || !height) continue;
+          const velocity = physics.getVelocity();
+          const halfW = Math.max(12, (player.width || 40) * 0.38);
+          const halfH = Math.max(18, (player.height || 80) * 0.45);
+          const left = halfW + 8;
+          const right = width - halfW - 8;
+          const ceiling = halfH + 8;
+          const floor = height - halfH - 8;
+          const x = Math.max(left, Math.min(right, player.x));
+          const y = Math.max(ceiling, Math.min(floor, player.y));
+          if (x !== player.x || y !== player.y) {
+            physics.teleport(x, y);
+            physics.setVelocity(
+              x !== player.x ? 0 : velocity[0],
+              y !== player.y ? 0 : velocity[1]
+            );
+          }
+        }
+      }
+
       for (const ball of runtime.objects.balls?.getAllInstances() || []) {
         const physics = ball.behaviors?.Physics;
-        if (!physics) continue;
+        if (!physics || !width || !height) continue;
         const velocity = physics.getVelocity();
-        if (ball.y < 34 && velocity[1] < 0) {
-          physics.setVelocity(velocity[0], Math.max(350, Math.abs(velocity[1]) * 0.8));
-        }
-        if (width > 0 && ball.x < 24 && velocity[0] < 0) {
-          physics.setVelocity(Math.abs(velocity[0]) * 0.8, velocity[1]);
-        } else if (width > 0 && ball.x > width - 24 && velocity[0] > 0) {
-          physics.setVelocity(-Math.abs(velocity[0]) * 0.8, velocity[1]);
-        }
+        const radius = Math.max(10, Math.min(ball.width || 24, ball.height || 24) * 0.45);
+        const left = radius + 5;
+        const right = width - radius - 5;
+        const ceiling = radius + 5;
+        const floor = height - radius - 5;
+        let x = ball.x;
+        let y = ball.y;
+        let vx = velocity[0];
+        let vy = velocity[1];
+        if (x < left) { x = left; vx = Math.abs(vx) * 0.72; }
+        else if (x > right) { x = right; vx = -Math.abs(vx) * 0.72; }
+        if (y < ceiling) { y = ceiling; vy = Math.abs(vy) * 0.72; }
+        else if (y > floor) { y = floor; vy = -Math.abs(vy) * 0.72; }
+        if (x !== ball.x || y !== ball.y) physics.teleport(x, y);
+        if (vx !== velocity[0] || vy !== velocity[1]) physics.setVelocity(vx, vy);
       }
     });
 
