@@ -92,6 +92,38 @@ runOnStartup(runtime => {
       }
     }
 
+
+    let lastP1Score = Number(runtime.globalVars.p1Score) || 0;
+    let lastP2Score = Number(runtime.globalVars.p2Score) || 0;
+    runtime.addEventListener("tick", () => {
+      if (!frenzy) {
+        lastP1Score = Number(runtime.globalVars.p1Score) || 0;
+        lastP2Score = Number(runtime.globalVars.p2Score) || 0;
+        return;
+      }
+      const p1 = Number(runtime.globalVars.p1Score) || 0;
+      const p2 = Number(runtime.globalVars.p2Score) || 0;
+      if (p1 > lastP1Score) runtime.globalVars.p1Score = lastP1Score + 5;
+      if (p2 > lastP2Score) runtime.globalVars.p2Score = lastP2Score + 5;
+      lastP1Score = Number(runtime.globalVars.p1Score) || 0;
+      lastP2Score = Number(runtime.globalVars.p2Score) || 0;
+
+      const width = runtime.layout?.width || 0;
+      for (const ball of runtime.objects.balls?.getAllInstances() || []) {
+        const physics = ball.behaviors?.Physics;
+        if (!physics) continue;
+        const velocity = physics.getVelocity();
+        if (ball.y < 34 && velocity[1] < 0) {
+          physics.setVelocity(velocity[0], Math.max(350, Math.abs(velocity[1]) * 0.8));
+        }
+        if (width > 0 && ball.x < 24 && velocity[0] < 0) {
+          physics.setVelocity(Math.abs(velocity[0]) * 0.8, velocity[1]);
+        } else if (width > 0 && ball.x > width - 24 && velocity[0] > 0) {
+          physics.setVelocity(-Math.abs(velocity[0]) * 0.8, velocity[1]);
+        }
+      }
+    });
+
     const jumpKeys = new Set(["ArrowUp","w","W","i","I","t","T"]);
     window.addEventListener("keydown", event => {
       if (event.repeat) return;
