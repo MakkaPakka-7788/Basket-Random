@@ -32,7 +32,12 @@ runOnStartup(runtime => {
       frenzy = enabled;
       button.textContent = frenzy ? "FRENZY: ON" : "FRENZY: OFF";
       button.style.background = frenzy ? "#b00020" : "#111";
-      for (const name of hiddenNames) setVisible(name, !frenzy);
+      if (frenzy) {
+        for (const name of hiddenNames) setVisible(name, false);
+      } else {
+        for (const [inst, visible] of savedVisibility) inst.isVisible = visible;
+        savedVisibility.clear();
+      }
       const balls = runtime.objects.balls?.getAllInstances() || [];
       for (const ball of balls) {
         const physics = ball.behaviors?.Physics;
@@ -56,7 +61,6 @@ runOnStartup(runtime => {
     button.addEventListener("click", () => setFrenzy(!frenzy));
 
     function tryDunk() {
-      if (frenzy) {}
       const hands = ["handCollision","handCollision2","handCollision3","handCollision4"]
         .flatMap(name => runtime.objects[name]?.getAllInstances() || []);
       const rims = runtime.objects.potaCollision?.getAllInstances() || [];
