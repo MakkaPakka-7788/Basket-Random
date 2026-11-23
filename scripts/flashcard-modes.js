@@ -77,7 +77,16 @@ runOnStartup(runtime => {
           hand === (runtime.objects.handCollision2?.getFirstInstance()) ? "arm2" :
           hand === (runtime.objects.handCollision3?.getFirstInstance()) ? "arm3" : "arm4";
         const arm = runtime.objects[armName]?.getFirstInstance();
-        if (arm) arm.angle = arm.angle - 0.9;
+        if (arm) {
+          const startAngle = arm.angle;
+          const started = performance.now();
+          const animateArm = now => {
+            const progress = Math.min(1, (now - started) / 180);
+            arm.angle = startAngle - 0.9 * (1 - Math.pow(1 - progress, 3));
+            if (progress < 1) requestAnimationFrame(animateArm);
+          };
+          requestAnimationFrame(animateArm);
+        }
         const physics = ball.behaviors?.Physics;
         if (physics) {
           physics.teleport(target.x, target.y);
