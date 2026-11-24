@@ -102,9 +102,26 @@ runOnStartup(runtime => {
     }
 
 
+    const ballFlashColors = [
+      [1, 0.05, 0.05],
+      [1, 0.9, 0.02],
+      [0.05, 1, 0.12],
+      [0.05, 0.25, 1]
+    ];
+    let ballFlashIndex = 0;
+    let lastBallFlash = 0;
+
     let lastP1Score = Number(runtime.globalVars.p1Score) || 0;
     let lastP2Score = Number(runtime.globalVars.p2Score) || 0;
     runtime.addEventListener("tick", () => {
+      const now = performance.now();
+      if (now - lastBallFlash >= 130) {
+        lastBallFlash = now;
+        ballFlashIndex = (ballFlashIndex + 1) % ballFlashColors.length;
+      }
+      for (const ball of runtime.objects.balls?.getAllInstances() || []) {
+        ball.colorRgb = ballFlashColors[ballFlashIndex];
+      }
       if (!frenzy) {
         lastP1Score = Number(runtime.globalVars.p1Score) || 0;
         lastP2Score = Number(runtime.globalVars.p2Score) || 0;
