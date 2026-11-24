@@ -19,6 +19,41 @@ runOnStartup(runtime => {
     });
     document.body.appendChild(button);
 
+    // Visible Frenzy arena rails, aligned to the actual game canvas.
+    const arenaVisual = document.createElement("div");
+    Object.assign(arenaVisual.style, {
+      position:"fixed", zIndex:"999990", pointerEvents:"none",
+      display:"none", boxSizing:"border-box"
+    });
+    const railStyle = {
+      position:"absolute", background:"linear-gradient(90deg,#f5f5f5,#9fdcff,#f5f5f5)",
+      border:"2px solid #26384b", borderRadius:"5px",
+      boxShadow:"0 0 8px #70cfff, inset 0 0 5px #fff"
+    };
+    const leftRail=document.createElement("div");
+    const rightRail=document.createElement("div");
+    const roofRail=document.createElement("div");
+    for (const rail of [leftRail,rightRail,roofRail]) Object.assign(rail.style,railStyle);
+    Object.assign(leftRail.style,{left:"0",top:"0",width:"10px",height:"100%"});
+    Object.assign(rightRail.style,{right:"0",top:"0",width:"10px",height:"100%"});
+    Object.assign(roofRail.style,{left:"0",top:"0",width:"100%",height:"10px"});
+    arenaVisual.append(leftRail,rightRail,roofRail);
+    document.body.appendChild(arenaVisual);
+
+    function positionArenaVisual() {
+      const canvas = runtime.canvas || document.querySelector("canvas");
+      if (!canvas || !frenzy) {
+        arenaVisual.style.display="none";
+        return;
+      }
+      const rect=canvas.getBoundingClientRect();
+      arenaVisual.style.display="block";
+      arenaVisual.style.left=rect.left+"px";
+      arenaVisual.style.top=rect.top+"px";
+      arenaVisual.style.width=rect.width+"px";
+      arenaVisual.style.height=rect.height+"px";
+    }
+
     function setVisible(name, visible) {
       const cls = runtime.objects[name];
       if (!cls) return;
@@ -32,6 +67,7 @@ runOnStartup(runtime => {
       frenzy = enabled;
       button.textContent = frenzy ? "FRENZY: ON" : "FRENZY: OFF";
       button.style.background = frenzy ? "#b00020" : "#111";
+      positionArenaVisual();
       if (frenzy) {
         for (const name of hiddenNames) setVisible(name, false);
       } else {
@@ -114,6 +150,7 @@ runOnStartup(runtime => {
     let lastP1Score = Number(runtime.globalVars.p1Score) || 0;
     let lastP2Score = Number(runtime.globalVars.p2Score) || 0;
     runtime.addEventListener("tick", () => {
+      if (frenzy) positionArenaVisual();
       const now = performance.now();
       if (now - lastBallFlash >= 130) {
         lastBallFlash = now;
