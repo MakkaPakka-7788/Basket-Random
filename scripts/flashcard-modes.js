@@ -56,7 +56,7 @@ runOnStartup(runtime => {
       roofRail.style.height="28px";
       roofRail.style.border="4px solid #fff";
       roofRail.style.boxShadow="0 5px 0 #111, 0 0 18px #00eaff";
-      roofRail.style.top="370px";
+      roofRail.style.top="185px";
       roofRail.style.zIndex="2147483647";
       roofRail.style.background="repeating-linear-gradient(90deg,#ff3030 0 34px,#ffe600 34px 68px,#20d94b 68px 102px,#2585ff 102px 136px)";
     }
@@ -93,7 +93,7 @@ runOnStartup(runtime => {
           linearDamping: physics.linearDamping
         });
         const original = ballDefaults.get(ball);
-        physics.elasticity = frenzy ? 1.25 : original.elasticity;
+        physics.elasticity = frenzy ? 1.85 : original.elasticity;
         physics.linearDamping = frenzy ? 0 : original.linearDamping;
       }
       const body = runtime.objects.body?.getFirstInstance();
@@ -266,7 +266,7 @@ runOnStartup(runtime => {
           // Solid invisible roof: stop upward movement and push the player back inside.
           const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
           const roofWorldY = canvasRect && canvasRect.height
-            ? ((398 - canvasRect.top) / canvasRect.height) * height
+            ? ((209 - canvasRect.top) / canvasRect.height) * height
             : height * 0.4;
           const ceiling = Math.max(halfH + 10, roofWorldY + halfH);
           const floor = height - halfH - 8;
@@ -299,10 +299,10 @@ runOnStartup(runtime => {
         let y = ball.y;
         let vx = velocity[0];
         let vy = velocity[1];
-        if (x < left) { x = left; vx = Math.abs(vx) * 0.72; }
-        else if (x > right) { x = right; vx = -Math.abs(vx) * 0.72; }
-        if (y < ceiling) { y = ceiling; vy = Math.abs(vy) * 0.72; }
-        else if (y > floor) { y = floor; vy = -Math.abs(vy) * 0.72; }
+        if (x < left) { x = left; vx = Math.abs(vx) * 1.2; }
+        else if (x > right) { x = right; vx = -Math.abs(vx) * 1.2; }
+        if (y < ceiling) { y = ceiling; vy = Math.abs(vy) * 1.35; }
+        else if (y > floor) { y = floor; vy = -Math.abs(vy) * 1.35; }
         if (x !== ball.x || y !== ball.y) physics.teleport(x, y);
         if (vx !== velocity[0] || vy !== velocity[1]) physics.setVelocity(vx, vy);
       }
