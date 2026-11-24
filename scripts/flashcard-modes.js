@@ -288,10 +288,6 @@ runOnStartup(runtime => {
     });
 
     const frenzyKeys = new Set();
-    const playerControls = {
-      body: {left:"a", right:"d"},
-      body2: {left:"ArrowLeft", right:"ArrowRight"}
-    };
     window.addEventListener("keydown", event => {
       if (!frenzy) return;
       const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
@@ -306,15 +302,19 @@ runOnStartup(runtime => {
 
     runtime.addEventListener("tick", () => {
       if (!frenzy) return;
-      for (const [bodyName, controls] of Object.entries(playerControls)) {
-        const body = runtime.objects[bodyName]?.getFirstInstance();
+      const airControls = [
+        {body:"body", left:"a", right:"d"},
+        {body:"body2", left:"ArrowLeft", right:"ArrowRight"}
+      ];
+      for (const control of airControls) {
+        const body = runtime.objects[control.body]?.getFirstInstance();
         const physics = body?.behaviors?.Physics;
         if (!physics) continue;
-        const v = physics.getVelocity();
-        if (Math.abs(v[1]) < 65) continue;
-        const direction = (frenzyKeys.has(controls.right) ? 1 : 0) -
-                          (frenzyKeys.has(controls.left) ? 1 : 0);
-        if (direction !== 0) physics.setVelocity(direction * 420, v[1]);
+        const velocity = physics.getVelocity();
+        if (Math.abs(velocity[1]) < 65) continue;
+        const direction = (frenzyKeys.has(control.right) ? 1 : 0) -
+                          (frenzyKeys.has(control.left) ? 1 : 0);
+        if (direction !== 0) physics.setVelocity(direction * 420, velocity[1]);
       }
     });
   });
