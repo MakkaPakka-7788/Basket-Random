@@ -287,19 +287,30 @@ runOnStartup(runtime => {
       }
     });
 
-    const jumpKeys = new Set(["ArrowUp","w","W","i","I","t","T"]);
     window.addEventListener("keydown", event => {
       if (event.repeat) return;
       if (event.key.toLowerCase() === "d") {
         tryDunk();
         return;
       }
-      if (!frenzy || !jumpKeys.has(event.key)) return;
-      const bodies = ["body","body2"].flatMap(name => runtime.objects[name]?.getAllInstances() || []);
-      for (const body of bodies) {
-        const physics = body.behaviors?.Physics;
-        if (!physics) continue;
-        const velocity = physics.getVelocity();
+      if (!frenzy) return;
+
+      // Keep each team's controls separate: WASD affects only team 1;
+      // arrow keys affect only team 2.
+      let bodyName = null;
+      if (["w","a","s","d"].includes(event.key.toLowerCase())) {
+        bodyName = "body";
+      } else if (event.key === "ArrowUp" || event.key === "ArrowLeft" ||
+                 event.key === "ArrowDown" || event.key === "ArrowRight") {
+        bodyName = "body2";
+      }
+      if (!bodyName) return;
+      const body = runtime.objects[bodyName]?.getFirstInstance();
+      const physics = body?.behaviors?.Physics;
+      if (!physics) return;
+      const velocity = physics.getVelocity();
+      if ((bodyName === "body" && event.key.toLowerCase() === "w") ||
+          (bodyName === "body2" && event.key === "ArrowUp")) {
         physics.setVelocity(velocity[0], -1450);
       }
     });
