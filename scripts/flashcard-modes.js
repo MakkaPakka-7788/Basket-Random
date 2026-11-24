@@ -22,21 +22,21 @@ runOnStartup(runtime => {
     // Visible Frenzy arena rails, aligned to the actual game canvas.
     const arenaVisual = document.createElement("div");
     Object.assign(arenaVisual.style, {
-      position:"fixed", zIndex:"999990", pointerEvents:"none",
+      position:"fixed", zIndex:"2147483646", pointerEvents:"none",
       display:"none", boxSizing:"border-box"
     });
     const railStyle = {
-      position:"absolute", background:"linear-gradient(90deg,#f5f5f5,#9fdcff,#f5f5f5)",
-      border:"2px solid #26384b", borderRadius:"5px",
-      boxShadow:"0 0 8px #70cfff, inset 0 0 5px #fff"
+      position:"absolute", background:"repeating-linear-gradient(90deg,#ff3030 0 34px,#ffe600 34px 68px,#20d94b 68px 102px,#2585ff 102px 136px)",
+      border:"3px solid #ffffff", borderRadius:"4px",
+      boxShadow:"0 0 14px #00cfff, 0 0 5px #000, inset 0 0 5px #fff"
     };
     const leftRail=document.createElement("div");
     const rightRail=document.createElement("div");
     const roofRail=document.createElement("div");
     for (const rail of [leftRail,rightRail,roofRail]) Object.assign(rail.style,railStyle);
-    Object.assign(leftRail.style,{left:"0",top:"0",width:"10px",height:"100%"});
+    Object.assign(leftRail.style,{left:"0",top:"0",width:"14px",height:"100%"});
     Object.assign(rightRail.style,{right:"0",top:"0",width:"10px",height:"100%"});
-    Object.assign(roofRail.style,{left:"0",top:"0",width:"100%",height:"10px"});
+    Object.assign(roofRail.style,{left:"0",top:"0",width:"100%",height:"18px"});
     arenaVisual.append(leftRail,rightRail,roofRail);
     document.body.appendChild(arenaVisual);
 
