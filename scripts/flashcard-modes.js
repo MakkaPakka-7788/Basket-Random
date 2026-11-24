@@ -50,9 +50,7 @@ runOnStartup(runtime => {
         .map(el => ({el, rect:el.getBoundingClientRect()}))
         .filter(x => x.rect.width > 100 && x.rect.height > 100)
         .sort((a,b) => (b.rect.width*b.rect.height)-(a.rect.width*a.rect.height))[0]?.el;
-      const rect = canvas ? canvas.getBoundingClientRect() : {
-        left:0, top:0, width:window.innerWidth, height:window.innerHeight
-      };
+      const rect = {left:0, top:0, width:window.innerWidth, height:window.innerHeight};
       arenaVisual.style.display="block";
       arenaVisual.style.left=rect.left+"px";
       arenaVisual.style.top=rect.top+"px";
@@ -60,9 +58,11 @@ runOnStartup(runtime => {
       arenaVisual.style.height=rect.height+"px";
       // Keep the roof in front of the game canvas and visibly span the whole arena.
       roofRail.style.display="block";
-      roofRail.style.height="34px";
-      roofRail.style.border="4px solid #fff";
-      roofRail.style.boxShadow="0 4px 0 #111, 0 0 22px #00eaff";
+      roofRail.style.height="42px";
+      roofRail.style.border="5px solid #fff";
+      roofRail.style.boxShadow="0 5px 0 #111, 0 0 28px #00eaff";
+      roofRail.style.top="58px";
+      roofRail.style.zIndex="2147483647";
       roofRail.style.background="repeating-linear-gradient(90deg,#ff3030 0 34px,#ffe600 34px 68px,#20d94b 68px 102px,#2585ff 102px 136px)";
     }
 
@@ -81,7 +81,10 @@ runOnStartup(runtime => {
       button.style.background = frenzy ? "#b00020" : "#111";
       positionArenaVisual();
       if (frenzy) {
-        for (const name of hiddenNames) setVisible(name, false);
+        for (const name of hiddenNames) {
+          const cls = runtime.objects[name];
+          if (cls) for (const inst of cls.getAllInstances()) inst.isVisible = false;
+        }
       } else {
         for (const [inst, visible] of savedVisibility) inst.isVisible = visible;
         savedVisibility.clear();
@@ -169,7 +172,10 @@ runOnStartup(runtime => {
       if (frenzy) {
         positionArenaVisual();
         // Re-apply Frenzy settings after the layout restart creates fresh instances.
-        for (const name of hiddenNames) setVisible(name, false);
+        for (const name of hiddenNames) {
+          const cls = runtime.objects[name];
+          if (cls) for (const inst of cls.getAllInstances()) inst.isVisible = false;
+        }
         for (const ball of runtime.objects.balls?.getAllInstances() || []) {
           const physics = ball.behaviors?.Physics;
           if (!physics) continue;
@@ -187,7 +193,8 @@ runOnStartup(runtime => {
         ballFlashIndex = (ballFlashIndex + 1) % ballFlashColors.length;
       }
       for (const ball of runtime.objects.balls?.getAllInstances() || []) {
-        ball.colorRgb = ballFlashColors[ballFlashIndex];
+        if (frenzy) ball.colorRgb = ballFlashColors[ballFlashIndex];
+        else ball.colorRgb = [1,1,1];
       }
       if (!frenzy) {
         lastP1Score = Number(runtime.globalVars.p1Score) || 0;
@@ -215,7 +222,11 @@ runOnStartup(runtime => {
           const left = halfW + 8;
           const right = width - halfW - 8;
           // Solid invisible roof: stop upward movement and push the player back inside.
-          const ceiling = halfH + 34;
+          const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
+          const roofWorldY = canvasRect && canvasRect.height
+            ? ((58 + 42 - canvasRect.top) / canvasRect.height) * height
+            : 100;
+          const ceiling = Math.max(halfH + 10, roofWorldY + halfH);
           const floor = height - halfH - 8;
           const x = Math.max(left, Math.min(right, player.x));
           const y = Math.max(ceiling, Math.min(floor, player.y));
@@ -236,7 +247,11 @@ runOnStartup(runtime => {
         const radius = Math.max(10, Math.min(ball.width || 24, ball.height || 24) * 0.45);
         const left = radius + 5;
         const right = width - radius - 5;
-        const ceiling = radius + 5;
+        const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
+        const roofWorldY = canvasRect && canvasRect.height
+          ? ((58 + 42 - canvasRect.top) / canvasRect.height) * height
+          : 100;
+        const ceiling = Math.max(radius + 5, roofWorldY + radius);
         const floor = height - radius - 5;
         let x = ball.x;
         let y = ball.y;
