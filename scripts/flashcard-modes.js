@@ -74,7 +74,7 @@ runOnStartup(runtime => {
       frenzy = enabled;
       button.textContent = frenzy ? "FRENZY: ON" : "FRENZY: OFF";
       button.style.background = frenzy ? "#b00020" : "#111";
-      positionArenaVisual();
+      arenaVisual.style.display = "none";
       if (frenzy) {
         for (const name of hiddenNames) {
           const cls = runtime.objects[name];
@@ -205,13 +205,13 @@ runOnStartup(runtime => {
     ];
     let ballFlashIndex = 0;
     let lastBallFlash = 0;
+    let escapeResetPending = false;
 
     let lastP1Score = Number(runtime.globalVars.p1Score) || 0;
     let lastP2Score = Number(runtime.globalVars.p2Score) || 0;
     runtime.addEventListener("tick", () => {
       if (frenzy) {
-        positionArenaVisual();
-        // Re-apply Frenzy settings after the layout restart creates fresh instances.
+        // Re-apply Frenzy settings to newly created balls and keep extra players hidden.
         for (const name of hiddenNames) {
           const cls = runtime.objects[name];
           if (cls) for (const inst of cls.getAllInstances()) inst.isVisible = false;
@@ -223,7 +223,7 @@ runOnStartup(runtime => {
             elasticity: physics.elasticity,
             linearDamping: physics.linearDamping
           });
-          physics.elasticity = 1.25;
+          physics.elasticity = 2.2;
           physics.linearDamping = 0;
         }
       }
@@ -253,58 +253,19 @@ runOnStartup(runtime => {
       const width = runtime.layout?.width || 0;
       const height = runtime.layout?.height || 0;
 
-      // Invisible Frenzy arena: keep both players and the ball inside the playfield.
-      for (const name of ["body", "body2"]) {
-        for (const player of runtime.objects[name]?.getAllInstances() || []) {
-          const physics = player.behaviors?.Physics;
-          if (!physics || !width || !height) continue;
-          const velocity = physics.getVelocity();
-          const halfW = Math.max(12, (player.width || 40) * 0.38);
-          const halfH = Math.max(18, (player.height || 80) * 0.45);
-          const left = halfW + 8;
-          const right = width - halfW - 8;
-          // Solid invisible roof: stop upward movement and push the player back inside.
-          const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
-          const roofWorldY = canvasRect && canvasRect.height
-            ? ((102 - canvasRect.top) / canvasRect.height) * height
-            : height * 0.4;
-          const ceiling = Math.max(halfH + 10, roofWorldY + halfH);
-          const floor = height - halfH - 8;
-          const x = Math.max(left, Math.min(right, player.x));
-          const y = Math.max(ceiling, Math.min(floor, player.y));
-          if (x !== player.x || y !== player.y) {
-            physics.teleport(x, y);
-            physics.setVelocity(
-              x !== player.x ? 0 : velocity[0],
-              y !== player.y ? Math.max(420, Math.abs(velocity[1]) * 0.65) : velocity[1]
-            );
-          }
-        }
-      }
-
+      // Frenzy has no roof or arena walls. If the ball leaves the playfield,
+      // restart the current game layout so the next round begins normally.
       for (const ball of ["balls","normalBall","kamesBall","heavyBall","smallBall"].flatMap(name => runtime.objects[name]?.getAllInstances() || [])) {
-        const physics = ball.behaviors?.Physics;
-        if (!physics || !width || !height) continue;
-        const velocity = physics.getVelocity();
-        const radius = Math.max(10, Math.min(ball.width || 24, ball.height || 24) * 0.45);
-        const left = radius + 5;
-        const right = width - radius - 5;
-        const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
-        const roofWorldY = canvasRect && canvasRect.height
-          ? ((398 - canvasRect.top) / canvasRect.height) * height
-          : height * 0.4;
-        const ceiling = Math.max(radius + 5, roofWorldY + radius);
-        const floor = height - radius - 5;
-        let x = ball.x;
-        let y = ball.y;
-        let vx = velocity[0];
-        let vy = velocity[1];
-        if (x < left) { x = left; vx = Math.abs(vx) * 1.2; }
-        else if (x > right) { x = right; vx = -Math.abs(vx) * 1.2; }
-        if (y < ceiling) { y = ceiling; vy = Math.abs(vy) * 1.35; }
-        else if (y > floor) { y = floor; vy = -Math.abs(vy) * 1.35; }
-        if (x !== ball.x || y !== ball.y) physics.teleport(x, y);
-        if (vx !== velocity[0] || vy !== velocity[1]) physics.setVelocity(vx, vy);
+        const margin = Math.max(30, (ball.width || 30) * 1.5);
+        if (width && height &&
+            (ball.x < -margin || ball.x > width + margin ||
+             ball.y < -margin || ball.y > height + margin)) {
+          if (!escapeResetPending && runtime.layout?.name && typeof runtime.goToLayout === "function") {
+            escapeResetPending = true;
+            runtime.goToLayout(runtime.layout.name);
+          }
+          return;
+        }
       }
     });
 
