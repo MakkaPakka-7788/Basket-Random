@@ -45,7 +45,11 @@ runOnStartup(runtime => {
         arenaVisual.style.display="none";
         return;
       }
-      const canvas = runtime.canvas || document.querySelector("canvas");
+      const canvases = Array.from(document.querySelectorAll("canvas"));
+      const canvas = canvases
+        .map(el => ({el, rect:el.getBoundingClientRect()}))
+        .filter(x => x.rect.width > 100 && x.rect.height > 100)
+        .sort((a,b) => (b.rect.width*b.rect.height)-(a.rect.width*a.rect.height))[0]?.el;
       const rect = canvas ? canvas.getBoundingClientRect() : {
         left:0, top:0, width:window.innerWidth, height:window.innerHeight
       };
@@ -56,8 +60,9 @@ runOnStartup(runtime => {
       arenaVisual.style.height=rect.height+"px";
       // Keep the roof in front of the game canvas and visibly span the whole arena.
       roofRail.style.display="block";
-      roofRail.style.height="22px";
-      roofRail.style.border="3px solid #fff";
+      roofRail.style.height="34px";
+      roofRail.style.border="4px solid #fff";
+      roofRail.style.boxShadow="0 4px 0 #111, 0 0 22px #00eaff";
       roofRail.style.background="repeating-linear-gradient(90deg,#ff3030 0 34px,#ffe600 34px 68px,#20d94b 68px 102px,#2585ff 102px 136px)";
     }
 
@@ -98,6 +103,10 @@ runOnStartup(runtime => {
         const world = body.behaviors.Physics.behavior;
         if (oldGravity === null) oldGravity = world.worldGravity;
         world.worldGravity = frenzy ? 7 : oldGravity;
+      }
+      // Restart the current Construct layout when Frenzy is switched on.
+      if (frenzy && typeof runtime.goToLayout === "function" && runtime.layout?.name) {
+        runtime.goToLayout(runtime.layout.name);
       }
     }
 
@@ -157,7 +166,21 @@ runOnStartup(runtime => {
     let lastP1Score = Number(runtime.globalVars.p1Score) || 0;
     let lastP2Score = Number(runtime.globalVars.p2Score) || 0;
     runtime.addEventListener("tick", () => {
-      if (frenzy) positionArenaVisual();
+      if (frenzy) {
+        positionArenaVisual();
+        // Re-apply Frenzy settings after the layout restart creates fresh instances.
+        for (const name of hiddenNames) setVisible(name, false);
+        for (const ball of runtime.objects.balls?.getAllInstances() || []) {
+          const physics = ball.behaviors?.Physics;
+          if (!physics) continue;
+          if (!ballDefaults.has(ball)) ballDefaults.set(ball, {
+            elasticity: physics.elasticity,
+            linearDamping: physics.linearDamping
+          });
+          physics.elasticity = 1.25;
+          physics.linearDamping = 0;
+        }
+      }
       const now = performance.now();
       if (now - lastBallFlash >= 130) {
         lastBallFlash = now;
@@ -192,7 +215,7 @@ runOnStartup(runtime => {
           const left = halfW + 8;
           const right = width - halfW - 8;
           // Solid invisible roof: stop upward movement and push the player back inside.
-          const ceiling = halfH + 28;
+          const ceiling = halfH + 34;
           const floor = height - halfH - 8;
           const x = Math.max(left, Math.min(right, player.x));
           const y = Math.max(ceiling, Math.min(floor, player.y));
@@ -200,7 +223,7 @@ runOnStartup(runtime => {
             physics.teleport(x, y);
             physics.setVelocity(
               x !== player.x ? 0 : velocity[0],
-              y !== player.y ? Math.max(180, Math.abs(velocity[1]) * 0.35) : velocity[1]
+              y !== player.y ? Math.max(420, Math.abs(velocity[1]) * 0.65) : velocity[1]
             );
           }
         }
