@@ -30,14 +30,9 @@ runOnStartup(runtime => {
       border:"3px solid #ffffff", borderRadius:"4px",
       boxShadow:"0 0 14px #00cfff, 0 0 5px #000, inset 0 0 5px #fff"
     };
-    const leftRail=document.createElement("div");
-    const rightRail=document.createElement("div");
     const roofRail=document.createElement("div");
-    for (const rail of [leftRail,rightRail,roofRail]) Object.assign(rail.style,railStyle);
-    Object.assign(leftRail.style,{left:"0",top:"0",width:"14px",height:"100%"});
-    Object.assign(rightRail.style,{right:"0",top:"0",width:"10px",height:"100%"});
-    Object.assign(roofRail.style,{left:"0",top:"0",width:"100%",height:"18px"});
-    arenaVisual.append(leftRail,rightRail,roofRail);
+    Object.assign(roofRail.style,railStyle,{left:"0",top:"0",width:"100%",height:"24px"});
+    arenaVisual.append(roofRail);
     document.body.appendChild(arenaVisual);
 
     function positionArenaVisual() {
@@ -58,10 +53,10 @@ runOnStartup(runtime => {
       arenaVisual.style.height=rect.height+"px";
       // Keep the roof in front of the game canvas and visibly span the whole arena.
       roofRail.style.display="block";
-      roofRail.style.height="42px";
-      roofRail.style.border="5px solid #fff";
-      roofRail.style.boxShadow="0 5px 0 #111, 0 0 28px #00eaff";
-      roofRail.style.top="58px";
+      roofRail.style.height="28px";
+      roofRail.style.border="4px solid #fff";
+      roofRail.style.boxShadow="0 5px 0 #111, 0 0 18px #00eaff";
+      roofRail.style.top="370px";
       roofRail.style.zIndex="2147483647";
       roofRail.style.background="repeating-linear-gradient(90deg,#ff3030 0 34px,#ffe600 34px 68px,#20d94b 68px 102px,#2585ff 102px 136px)";
     }
@@ -192,9 +187,11 @@ runOnStartup(runtime => {
         lastBallFlash = now;
         ballFlashIndex = (ballFlashIndex + 1) % ballFlashColors.length;
       }
-      for (const ball of runtime.objects.balls?.getAllInstances() || []) {
-        if (frenzy) ball.colorRgb = ballFlashColors[ballFlashIndex];
-        else ball.colorRgb = [1,1,1];
+      const ballTypes = ["balls","normalBall","kamesBall","heavyBall","smallBall"];
+      for (const name of ballTypes) {
+        for (const ball of runtime.objects[name]?.getAllInstances() || []) {
+          ball.colorRgb = frenzy ? ballFlashColors[ballFlashIndex] : [1,1,1];
+        }
       }
       if (!frenzy) {
         lastP1Score = Number(runtime.globalVars.p1Score) || 0;
@@ -224,8 +221,8 @@ runOnStartup(runtime => {
           // Solid invisible roof: stop upward movement and push the player back inside.
           const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
           const roofWorldY = canvasRect && canvasRect.height
-            ? ((58 + 42 - canvasRect.top) / canvasRect.height) * height
-            : 100;
+            ? ((398 - canvasRect.top) / canvasRect.height) * height
+            : height * 0.4;
           const ceiling = Math.max(halfH + 10, roofWorldY + halfH);
           const floor = height - halfH - 8;
           const x = Math.max(left, Math.min(right, player.x));
@@ -240,7 +237,7 @@ runOnStartup(runtime => {
         }
       }
 
-      for (const ball of runtime.objects.balls?.getAllInstances() || []) {
+      for (const ball of ["balls","normalBall","kamesBall","heavyBall","smallBall"].flatMap(name => runtime.objects[name]?.getAllInstances() || [])) {
         const physics = ball.behaviors?.Physics;
         if (!physics || !width || !height) continue;
         const velocity = physics.getVelocity();
@@ -249,8 +246,8 @@ runOnStartup(runtime => {
         const right = width - radius - 5;
         const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
         const roofWorldY = canvasRect && canvasRect.height
-          ? ((58 + 42 - canvasRect.top) / canvasRect.height) * height
-          : 100;
+          ? ((398 - canvasRect.top) / canvasRect.height) * height
+          : height * 0.4;
         const ceiling = Math.max(radius + 5, roofWorldY + radius);
         const floor = height - radius - 5;
         let x = ball.x;
