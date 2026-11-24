@@ -287,31 +287,55 @@ runOnStartup(runtime => {
       }
     });
 
-    window.addEventListener("keydown", event => {
-      if (event.repeat) return;
-      if (event.key.toLowerCase() === "d") {
-        tryDunk();
-        return;
-      }
+    const frenzyKeys = new Set();
+    const playerControls = {
+      body: {left:"a", right:"d", jump:"w"},
+      body2: {left:"ArrowLeft", right:"ArrowRight", jump:"ArrowUp"}
+    };
+    function handleFrenzyKey(event, isDown) {
       if (!frenzy) return;
-
-      // Keep each team's controls separate: WASD affects only team 1;
-      // arrow keys affect only team 2.
-      let bodyName = null;
-      if (["w","a","s","d"].includes(event.key.toLowerCase())) {
-        bodyName = "body";
-      } else if (event.key === "ArrowUp" || event.key === "ArrowLeft" ||
-                 event.key === "ArrowDown" || event.key === "ArrowRight") {
-        bodyName = "body2";
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      const belongsToFrenzy = ["w","a","s","d","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(key);
+      if (!belongsToFrenzy) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.stopPropagation();
+      if (isDown) {
+        frenzyKeys.add(key);
+        if (key === "d" && !event.repeat) tryDunk();
+        if (key === "w" && !event.repeat) {
+          const body = runtime.objects.body?.getFirstInstance();
+          const physics = body?.behaviors?.Physics;
+          if (physics) {
+            const v = physics.getVelocity();
+            physics.setVelocity(v[0], -1450);
+          }
+        }
+        if (key === "ArrowUp" && !event.repeat) {
+          const body = runtime.objects.body2?.getFirstInstance();
+          const physics = body?.behaviors?.Physics;
+          if (physics) {
+            const v = physics.getVelocity();
+            physics.setVelocity(v[0], -1450);
+          }
+        }
+      } else {
+        frenzyKeys.delete(key);
       }
-      if (!bodyName) return;
-      const body = runtime.objects[bodyName]?.getFirstInstance();
-      const physics = body?.behaviors?.Physics;
-      if (!physics) return;
-      const velocity = physics.getVelocity();
-      if ((bodyName === "body" && event.key.toLowerCase() === "w") ||
-          (bodyName === "body2" && event.key === "ArrowUp")) {
-        physics.setVelocity(velocity[0], -1450);
+    }
+    window.addEventListener("keydown", event => handleFrenzyKey(event, true), true);
+    window.addEventListener("keyup", event => handleFrenzyKey(event, false), true);
+
+    runtime.addEventListener("tick", () => {
+      if (!frenzy) return;
+      for (const [bodyName, controls] of Object.entries(playerControls)) {
+        const body = runtime.objects[bodyName]?.getFirstInstance();
+        const physics = body?.behaviors?.Physics;
+        if (!physics) continue;
+        const v = physics.getVelocity();
+        const direction = (frenzyKeys.has(controls.right) ? 1 : 0) -
+                          (frenzyKeys.has(controls.left) ? 1 : 0);
+        physics.setVelocity(direction * 420, v[1]);
       }
     });
   });
