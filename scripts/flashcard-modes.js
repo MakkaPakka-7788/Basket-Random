@@ -56,7 +56,7 @@ runOnStartup(runtime => {
       roofRail.style.height="28px";
       roofRail.style.border="4px solid #fff";
       roofRail.style.boxShadow="0 5px 0 #111, 0 0 18px #00eaff";
-      roofRail.style.top="185px";
+      roofRail.style.top="60px";
       roofRail.style.zIndex="2147483647";
       roofRail.style.background="repeating-linear-gradient(90deg,#ff3030 0 34px,#ffe600 34px 68px,#20d94b 68px 102px,#2585ff 102px 136px)";
     }
@@ -266,7 +266,7 @@ runOnStartup(runtime => {
           // Solid invisible roof: stop upward movement and push the player back inside.
           const canvasRect = (runtime.canvas || document.querySelector("canvas"))?.getBoundingClientRect();
           const roofWorldY = canvasRect && canvasRect.height
-            ? ((209 - canvasRect.top) / canvasRect.height) * height
+            ? ((102 - canvasRect.top) / canvasRect.height) * height
             : height * 0.4;
           const ceiling = Math.max(halfH + 10, roofWorldY + halfH);
           const floor = height - halfH - 8;
