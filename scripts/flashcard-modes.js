@@ -75,6 +75,7 @@ runOnStartup(runtime => {
       button.textContent = frenzy ? "FRENZY: ON" : "FRENZY: OFF";
       button.style.background = frenzy ? "#b00020" : "#111";
       arenaVisual.style.display = "none";
+      arenaBounds = null;
       if (frenzy) {
         for (const name of hiddenNames) {
           const cls = runtime.objects[name];
@@ -206,6 +207,7 @@ runOnStartup(runtime => {
     let ballFlashIndex = 0;
     let lastBallFlash = 0;
     let escapeResetPending = false;
+    let arenaBounds = null;
 
     let lastP1Score = Number(runtime.globalVars.p1Score) || 0;
     let lastP2Score = Number(runtime.globalVars.p2Score) || 0;
@@ -253,19 +255,35 @@ runOnStartup(runtime => {
       const width = runtime.layout?.width || 0;
       const height = runtime.layout?.height || 0;
 
-      // Frenzy has no roof or arena walls. If the ball leaves the playfield,
-      // restart the current game layout so the next round begins normally.
+      // Frenzy enclosure is anchored to the actual hoop collision objects.
+      // The hoop positions define the two vertical side walls; the roof joins them.
+      const hoopParts = runtime.objects.potaCollision?.getAllInstances() || [];
+      if (width && height && hoopParts.length >= 2) {
+        const hoopXs = hoopParts.map(h => h.x).sort((a,b) => a-b);
+        const leftWall = hoopXs[0] + Math.max(2, (hoopParts[0].width || 8) * 0.5);
+        const rightWall = hoopXs[hoopXs.length-1] - Math.max(2, (hoopParts[hoopParts.length-1].width || 8) * 0.5);
+        arenaBounds = {left:leftWall, right:rightWall, roof:2, floor:height-3};
+      } else if (width && height) {
+        arenaBounds = {left:8, right:width-8, roof:2, floor:height-3};
+      }
+
       for (const ball of ["balls","normalBall","kamesBall","heavyBall","smallBall"].flatMap(name => runtime.objects[name]?.getAllInstances() || [])) {
-        const margin = Math.max(30, (ball.width || 30) * 1.5);
-        if (width && height &&
-            (ball.x < -margin || ball.x > width + margin ||
-             ball.y < -margin || ball.y > height + margin)) {
-          if (!escapeResetPending && runtime.layout?.name && typeof runtime.goToLayout === "function") {
-            escapeResetPending = true;
-            runtime.goToLayout(runtime.layout.name);
-          }
-          return;
-        }
+        const physics = ball.behaviors?.Physics;
+        if (!physics || !arenaBounds) continue;
+        const radius = Math.max(3, Math.min(ball.width || 10, ball.height || 10) * 0.45);
+        const left = arenaBounds.left + radius;
+        const right = arenaBounds.right - radius;
+        const top = arenaBounds.roof + radius;
+        const bottom = arenaBounds.floor - radius;
+        let x=ball.x, y=ball.y;
+        const v=physics.getVelocity();
+        let vx=v[0], vy=v[1];
+        if (x < left) { x=left; vx=Math.abs(vx)*1.08; }
+        else if (x > right) { x=right; vx=-Math.abs(vx)*1.08; }
+        if (y < top) { y=top; vy=Math.abs(vy)*1.08; }
+        else if (y > bottom) { y=bottom; vy=-Math.abs(vy)*1.08; }
+        if (x!==ball.x || y!==ball.y) physics.teleport(x,y);
+        if (vx!==v[0] || vy!==v[1]) physics.setVelocity(vx,vy);
       }
     });
 
