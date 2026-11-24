@@ -41,17 +41,24 @@ runOnStartup(runtime => {
     document.body.appendChild(arenaVisual);
 
     function positionArenaVisual() {
-      const canvas = runtime.canvas || document.querySelector("canvas");
-      if (!canvas || !frenzy) {
+      if (!frenzy) {
         arenaVisual.style.display="none";
         return;
       }
-      const rect=canvas.getBoundingClientRect();
+      const canvas = runtime.canvas || document.querySelector("canvas");
+      const rect = canvas ? canvas.getBoundingClientRect() : {
+        left:0, top:0, width:window.innerWidth, height:window.innerHeight
+      };
       arenaVisual.style.display="block";
       arenaVisual.style.left=rect.left+"px";
       arenaVisual.style.top=rect.top+"px";
       arenaVisual.style.width=rect.width+"px";
       arenaVisual.style.height=rect.height+"px";
+      // Keep the roof in front of the game canvas and visibly span the whole arena.
+      roofRail.style.display="block";
+      roofRail.style.height="22px";
+      roofRail.style.border="3px solid #fff";
+      roofRail.style.background="repeating-linear-gradient(90deg,#ff3030 0 34px,#ffe600 34px 68px,#20d94b 68px 102px,#2585ff 102px 136px)";
     }
 
     function setVisible(name, visible) {
@@ -184,7 +191,8 @@ runOnStartup(runtime => {
           const halfH = Math.max(18, (player.height || 80) * 0.45);
           const left = halfW + 8;
           const right = width - halfW - 8;
-          const ceiling = halfH + 8;
+          // Solid invisible roof: stop upward movement and push the player back inside.
+          const ceiling = halfH + 28;
           const floor = height - halfH - 8;
           const x = Math.max(left, Math.min(right, player.x));
           const y = Math.max(ceiling, Math.min(floor, player.y));
@@ -192,7 +200,7 @@ runOnStartup(runtime => {
             physics.teleport(x, y);
             physics.setVelocity(
               x !== player.x ? 0 : velocity[0],
-              y !== player.y ? 0 : velocity[1]
+              y !== player.y ? Math.max(180, Math.abs(velocity[1]) * 0.35) : velocity[1]
             );
           }
         }
