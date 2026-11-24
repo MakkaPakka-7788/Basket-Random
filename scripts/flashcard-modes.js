@@ -102,11 +102,56 @@ runOnStartup(runtime => {
         if (oldGravity === null) oldGravity = world.worldGravity;
         world.worldGravity = frenzy ? 7 : oldGravity;
       }
-      // Restart the current Construct layout when Frenzy is switched on.
-      if (frenzy && typeof runtime.goToLayout === "function" && runtime.layout?.name) {
-        runtime.goToLayout(runtime.layout.name);
-      }
+      // Frenzy is selected before the original game start flow, so no mid-round restart is needed.
     }
+
+    button.style.display = "none";
+    arenaVisual.style.display = "none";
+
+    // Pre-game selector: choose player count and Frenzy before opening the existing game menu.
+    const pregame = document.createElement("div");
+    Object.assign(pregame.style, {
+      position:"fixed", inset:"0", zIndex:"2147483647", display:"flex",
+      alignItems:"center", justifyContent:"center", background:"#000b",
+      fontFamily:"Arial,sans-serif", color:"#fff"
+    });
+    const panel = document.createElement("div");
+    Object.assign(panel.style,{background:"#171717",border:"3px solid #fff",borderRadius:"16px",padding:"26px",width:"min(420px,90vw)",textAlign:"center",boxShadow:"0 8px 35px #000"});
+    const heading=document.createElement("div");
+    heading.textContent="BASKET RANDOM";
+    Object.assign(heading.style,{fontSize:"26px",fontWeight:"900",marginBottom:"20px"});
+    const playerRow=document.createElement("div");
+    Object.assign(playerRow.style,{display:"flex",gap:"12px",marginBottom:"18px"});
+    let playerCount=2;
+    function choice(label,selected) {
+      const b=document.createElement("button"); b.type="button"; b.textContent=label;
+      Object.assign(b.style,{flex:"1",padding:"15px 8px",fontSize:"18px",fontWeight:"900",border:"2px solid #fff",borderRadius:"8px",background:selected?"#087db5":"#333",color:"#fff",cursor:"pointer"});
+      return b;
+    }
+    const one=choice("1 PLAYER",false), two=choice("2 PLAYERS",true);
+    function updatePlayerChoice() {
+      one.style.background=playerCount===1?"#087db5":"#333";
+      two.style.background=playerCount===2?"#087db5":"#333";
+    }
+    one.addEventListener("click",()=>{playerCount=1;updatePlayerChoice();});
+    two.addEventListener("click",()=>{playerCount=2;updatePlayerChoice();});
+    playerRow.append(one,two);
+    const frenzyChoice=choice("FRENZY: OFF",false);
+    let selectedFrenzy=false;
+    frenzyChoice.style.width="100%";
+    frenzyChoice.style.marginBottom="18px";
+    frenzyChoice.addEventListener("click",()=>{selectedFrenzy=!selectedFrenzy;frenzyChoice.textContent="FRENZY: "+(selectedFrenzy?"ON":"OFF");frenzyChoice.style.background=selectedFrenzy?"#b00020":"#333";});
+    const play=choice("START GAME",true);
+    play.style.width="100%";
+    play.addEventListener("click",()=>{
+      runtime.globalVars.CPU = playerCount===1;
+      setFrenzy(selectedFrenzy);
+      button.style.display="block";
+      pregame.remove();
+    });
+    panel.append(heading,playerRow,frenzyChoice,play);
+    pregame.append(panel);
+    document.body.append(pregame);
 
     button.addEventListener("click", () => setFrenzy(!frenzy));
 
